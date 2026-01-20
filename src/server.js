@@ -60,6 +60,45 @@ app.get('/api/history', (req, res) => {
   }
 });
 
+// API: Get monthly stats (last month by default)
+app.get('/api/monthly', (req, res) => {
+  try {
+    const year = req.query.year ? parseInt(req.query.year) : null;
+    const month = req.query.month ? parseInt(req.query.month) : null;
+
+    let stats;
+    if (year && month) {
+      stats = {
+        year,
+        month,
+        monthName: getMonthName(month),
+        ...db.getMonthlyAverage(year, month)
+      };
+    } else {
+      stats = db.getLastMonthStats();
+    }
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Monthly stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+function getMonthName(month) {
+  const months = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  return months[month - 1] || '';
+}
+
 // API: Force refresh data
 app.post('/api/refresh', async (req, res) => {
   try {

@@ -33,6 +33,39 @@ async function fetchHistory() {
   }
 }
 
+async function fetchMonthlyStats() {
+  try {
+    const response = await fetch('/api/monthly');
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Error al cargar promedios mensuales');
+    }
+
+    return result.data;
+  } catch (error) {
+    showError(error.message);
+    return null;
+  }
+}
+
+function updateMonthlyStats(stats) {
+  if (!stats || stats.days === 0) {
+    document.getElementById('month-name').textContent = 'Sin datos';
+    document.getElementById('avg-cabezas').textContent = '-';
+    document.getElementById('avg-inmag').textContent = '-';
+    document.getElementById('total-month-cabezas').textContent = '-';
+    document.getElementById('month-days').textContent = '-';
+    return;
+  }
+
+  document.getElementById('month-name').textContent = `${stats.monthName} ${stats.year}`;
+  document.getElementById('avg-cabezas').textContent = formatNumber(stats.avg_cabezas);
+  document.getElementById('avg-inmag').textContent = formatCurrency(stats.avg_inmag);
+  document.getElementById('total-month-cabezas').textContent = formatNumber(stats.total_cabezas);
+  document.getElementById('month-days').textContent = stats.days;
+}
+
 async function refreshData() {
   const btn = document.getElementById('refresh-btn');
   btn.disabled = true;
@@ -169,9 +202,14 @@ function showError(message) {
 }
 
 async function loadData() {
-  const data = await fetchHistory();
+  const [data, monthlyStats] = await Promise.all([
+    fetchHistory(),
+    fetchMonthlyStats()
+  ]);
+
   updateSummary(data);
   updateTable(data);
+  updateMonthlyStats(monthlyStats);
 }
 
 // Initialize

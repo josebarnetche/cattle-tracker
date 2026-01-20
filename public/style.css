@@ -87,6 +87,40 @@ header h1 {
   font-weight: 700;
 }
 
+.monthly-section {
+  background: linear-gradient(135deg, #2c5530 0%, #4a7c59 100%);
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 30px;
+  color: white;
+}
+
+.monthly-section h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.monthly-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.card.monthly {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(10px);
+}
+
+.card.monthly .card-label {
+  color: rgba(255,255,255,0.85);
+}
+
+.card.monthly .card-value {
+  color: white;
+  font-size: 2rem;
+}
+
 .table-section {
   background: white;
   border-radius: 12px;

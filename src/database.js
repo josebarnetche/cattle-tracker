@@ -87,6 +87,54 @@ function getAll() {
   return stmt.all();
 }
 
+function getMonthlyAverage(year, month) {
+  const db = getDb();
+  const monthStr = String(month).padStart(2, '0');
+  const pattern = `${year}-${monthStr}%`;
+
+  const stmt = db.prepare(`
+    SELECT
+      COUNT(*) as days,
+      ROUND(AVG(cabezas), 0) as avg_cabezas,
+      ROUND(AVG(importe), 2) as avg_importe,
+      ROUND(AVG(inmag), 2) as avg_inmag,
+      ROUND(SUM(cabezas), 0) as total_cabezas,
+      ROUND(SUM(importe), 2) as total_importe,
+      MIN(fecha) as first_date,
+      MAX(fecha) as last_date
+    FROM price_records
+    WHERE fecha LIKE ?
+  `);
+
+  return stmt.get(pattern);
+}
+
+function getLastMonthStats() {
+  const now = new Date();
+  let year = now.getFullYear();
+  let month = now.getMonth(); // 0-indexed, so this is last month
+
+  if (month === 0) {
+    month = 12;
+    year -= 1;
+  }
+
+  return {
+    year,
+    month,
+    monthName: getMonthName(month),
+    ...getMonthlyAverage(year, month)
+  };
+}
+
+function getMonthName(month) {
+  const months = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  return months[month - 1] || '';
+}
+
 function close() {
   if (db) {
     db.close();
@@ -101,5 +149,7 @@ module.exports = {
   getLatest,
   getHistory,
   getAll,
+  getMonthlyAverage,
+  getLastMonthStats,
   close
 };
