@@ -111,11 +111,59 @@
         </div>
         <div class="stat-card">
           <div class="stat-content">
-            <div class="stat-label">Volatilidad</div>
+            <div class="stat-label">Volatilidad (30d)</div>
             <div class="stat-value" id="volatility">-</div>
             <div class="stat-subtitle">Desviacion estandar</div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="yearly-section">
+      <h2>Estadisticas Anuales</h2>
+      <div class="yearly-grid">
+        <div class="stat-card highlight">
+          <div class="stat-content">
+            <div class="stat-label">Promedio Anual INMAG</div>
+            <div class="stat-value" id="yearly-avg">-</div>
+            <div class="stat-subtitle" id="yearly-period">-</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">INMAG Maximo Anual</div>
+            <div class="stat-value" id="yearly-max">-</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">INMAG Minimo Anual</div>
+            <div class="stat-value" id="yearly-min">-</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">Volatilidad Anual</div>
+            <div class="stat-value" id="yearly-volatility">-</div>
+            <div class="stat-change" id="yearly-volatility-pct"></div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">Total Cabezas</div>
+            <div class="stat-value" id="yearly-cabezas">-</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">Dias con Datos</div>
+            <div class="stat-value" id="yearly-days">-</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card full-width" style="margin-top: 20px;">
+        <h3>Evolucion Mensual del INMAG</h3>
+        <canvas id="yearly-chart"></canvas>
       </div>
     </div>
 

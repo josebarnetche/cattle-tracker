@@ -364,6 +364,61 @@ footer a {
   margin-top: 3px;
 }
 
+/* Yearly Section */
+.yearly-section {
+  background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 30px;
+  color: white;
+}
+
+.yearly-section h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.yearly-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 15px;
+}
+
+.yearly-section .stat-card {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(10px);
+}
+
+.yearly-section .stat-card.highlight {
+  background: rgba(255,255,255,0.25);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.yearly-section .stat-label {
+  color: rgba(255,255,255,0.85);
+}
+
+.yearly-section .stat-value {
+  color: white;
+}
+
+.yearly-section .stat-subtitle {
+  color: rgba(255,255,255,0.7);
+}
+
+.yearly-section .stat-change {
+  color: rgba(255,255,255,0.9);
+}
+
+.yearly-section .chart-card {
+  background: rgba(255,255,255,0.95);
+}
+
+.yearly-section .chart-card h3 {
+  color: #1a365d;
+}
+
 /* Filter Section */
 .filter-section {
   background: white;

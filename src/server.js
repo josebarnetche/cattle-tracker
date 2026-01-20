@@ -186,6 +186,29 @@ app.get('/api/stats/monthly-comparison', (req, res) => {
   }
 });
 
+// API: Get yearly statistics with volatility
+app.get('/api/stats/yearly', (req, res) => {
+  try {
+    const year = req.query.year ? parseInt(req.query.year) : null;
+    const stats = db.getYearlyStats(year);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('Yearly stats error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Get all-time statistics
+app.get('/api/stats/all-time', (req, res) => {
+  try {
+    const stats = db.getAllTimeStats();
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('All-time stats error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // API: Export data to CSV
 app.get('/api/export', (req, res) => {
   try {

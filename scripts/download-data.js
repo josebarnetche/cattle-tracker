@@ -5,20 +5,29 @@ const { scrapeMonth } = require('../src/scraper');
 async function downloadAllData() {
   const allRecords = [];
 
-  // Download December 2025
-  console.log('Downloading December 2025...');
-  const dec2025 = await scrapeMonth(2025, 12);
-  allRecords.push(...dec2025);
-  console.log(`Got ${dec2025.length} records`);
+  // Download from July 2025 to January 2026 (7 months)
+  const months = [
+    { year: 2025, month: 7 },
+    { year: 2025, month: 8 },
+    { year: 2025, month: 9 },
+    { year: 2025, month: 10 },
+    { year: 2025, month: 11 },
+    { year: 2025, month: 12 },
+    { year: 2026, month: 1 },
+  ];
 
-  // Wait a bit between requests
-  await new Promise(r => setTimeout(r, 1000));
-
-  // Download January 2026
-  console.log('Downloading January 2026...');
-  const jan2026 = await scrapeMonth(2026, 1);
-  allRecords.push(...jan2026);
-  console.log(`Got ${jan2026.length} records`);
+  for (const { year, month } of months) {
+    console.log(`Downloading ${month}/${year}...`);
+    try {
+      const records = await scrapeMonth(year, month);
+      allRecords.push(...records);
+      console.log(`  Got ${records.length} records`);
+    } catch (error) {
+      console.log(`  Error: ${error.message}`);
+    }
+    // Wait between requests
+    await new Promise(r => setTimeout(r, 1500));
+  }
 
   // Sort by date
   allRecords.sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -45,14 +54,24 @@ async function downloadAllData() {
   fs.writeFileSync(outputPath, JSON.stringify(uniqueRecords, null, 2));
   console.log(`Saved to ${outputPath}`);
 
-  // Print summary
-  console.log('\n=== Summary ===');
-  uniqueRecords.forEach(r => {
-    console.log(`${r.fecha}: cabezas=${r.cabezas}, inmag=${r.inmag}`);
-  });
+  // Print monthly summary
+  console.log('\n=== Monthly Summary ===');
+  const byMonth = {};
+  for (const r of uniqueRecords) {
+    const month = r.fecha.substring(0, 7);
+    if (!byMonth[month]) byMonth[month] = [];
+    byMonth[month].push(r);
+  }
 
-  const avgInmag = uniqueRecords.reduce((sum, r) => sum + r.inmag, 0) / uniqueRecords.length;
-  console.log(`\nOverall avg INMAG: ${avgInmag.toFixed(2)}`);
+  for (const [month, records] of Object.entries(byMonth).sort()) {
+    const avgInmag = records.reduce((s, r) => s + r.inmag, 0) / records.length;
+    const minInmag = Math.min(...records.map(r => r.inmag));
+    const maxInmag = Math.max(...records.map(r => r.inmag));
+    console.log(`${month}: ${records.length} days, avg=${avgInmag.toFixed(2)}, min=${minInmag.toFixed(2)}, max=${maxInmag.toFixed(2)}`);
+  }
+
+  const overallAvg = uniqueRecords.reduce((s, r) => s + r.inmag, 0) / uniqueRecords.length;
+  console.log(`\nOverall avg INMAG: ${overallAvg.toFixed(2)}`);
 }
 
 downloadAllData().catch(console.error);

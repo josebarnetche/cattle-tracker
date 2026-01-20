@@ -5,12 +5,15 @@ const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 let inmagChart = null;
 let cabezasChart = null;
 let monthlyComparisonChart = null;
+let yearlyChart = null;
 
 // Chart colors
 const CHART_COLORS = {
   primary: '#2c5530',
   primaryLight: 'rgba(44, 85, 48, 0.2)',
   secondary: '#4a7c59',
+  tertiary: '#1a365d',
+  tertiaryLight: 'rgba(26, 54, 93, 0.2)',
   grid: '#e5e5e5'
 };
 
@@ -67,12 +70,35 @@ async function fetchRangeStats(startDate, endDate) {
 
 async function fetchMonthlyComparison() {
   try {
-    const response = await fetch('/api/stats/monthly-comparison?months=6');
+    const response = await fetch('/api/stats/monthly-comparison?months=12');
     const result = await response.json();
     return result.success ? result.data : [];
   } catch (error) {
     console.error('Error fetching monthly comparison:', error);
     return [];
+  }
+}
+
+async function fetchYearlyStats(year = null) {
+  try {
+    const url = year ? `/api/stats/yearly?year=${year}` : '/api/stats/yearly';
+    const response = await fetch(url);
+    const result = await response.json();
+    return result.success ? result.data : null;
+  } catch (error) {
+    console.error('Error fetching yearly stats:', error);
+    return null;
+  }
+}
+
+async function fetchAllTimeStats() {
+  try {
+    const response = await fetch('/api/stats/all-time');
+    const result = await response.json();
+    return result.success ? result.data : null;
+  } catch (error) {
+    console.error('Error fetching all-time stats:', error);
+    return null;
   }
 }
 
@@ -242,7 +268,110 @@ function initMonthlyComparisonChart(data) {
   });
 }
 
+function initYearlyChart(monthlyData) {
+  const ctx = document.getElementById('yearly-chart');
+  if (!ctx || !monthlyData || monthlyData.length === 0) return;
+
+  if (yearlyChart) yearlyChart.destroy();
+
+  const labels = monthlyData.map(d => d.monthName);
+  const avgValues = monthlyData.map(d => d.avg_inmag);
+  const minValues = monthlyData.map(d => d.min_inmag);
+  const maxValues = monthlyData.map(d => d.max_inmag);
+
+  yearlyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Promedio INMAG',
+          data: avgValues,
+          borderColor: CHART_COLORS.tertiary,
+          backgroundColor: CHART_COLORS.tertiaryLight,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Maximo',
+          data: maxValues,
+          borderColor: '#22c55e',
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 2
+        },
+        {
+          label: 'Minimo',
+          data: minValues,
+          borderColor: '#ef4444',
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: CHART_COLORS.grid }
+        },
+        y: {
+          grid: { color: CHART_COLORS.grid },
+          ticks: {
+            callback: (value) => formatCurrency(value)
+          }
+        }
+      }
+    }
+  });
+}
+
 // ============ UI Update Functions ============
+
+function updateYearlyStats(stats) {
+  if (!stats || !stats.days) {
+    document.getElementById('yearly-avg').textContent = '-';
+    document.getElementById('yearly-max').textContent = '-';
+    document.getElementById('yearly-min').textContent = '-';
+    document.getElementById('yearly-volatility').textContent = '-';
+    document.getElementById('yearly-cabezas').textContent = '-';
+    document.getElementById('yearly-days').textContent = '-';
+    document.getElementById('yearly-period').textContent = '-';
+    return;
+  }
+
+  document.getElementById('yearly-avg').textContent = formatCurrency(stats.avg_inmag);
+  document.getElementById('yearly-max').textContent = formatCurrency(stats.max_inmag);
+  document.getElementById('yearly-min').textContent = formatCurrency(stats.min_inmag);
+  document.getElementById('yearly-volatility').textContent = formatCurrency(stats.volatility);
+  document.getElementById('yearly-cabezas').textContent = formatNumber(stats.total_cabezas);
+  document.getElementById('yearly-days').textContent = stats.days;
+  document.getElementById('yearly-period').textContent = `${stats.first_date} a ${stats.last_date}`;
+
+  const volPctEl = document.getElementById('yearly-volatility-pct');
+  if (volPctEl && stats.volatility_percent) {
+    volPctEl.textContent = `${stats.volatility_percent}% del promedio`;
+  }
+
+  // Initialize yearly chart with monthly breakdown
+  if (stats.monthly && stats.monthly.length > 0) {
+    initYearlyChart(stats.monthly);
+  }
+}
 
 function updateMonthlyStats(stats) {
   if (!stats || !stats.days) {
@@ -549,17 +678,19 @@ function exportToCSV() {
 // ============ Main Load Function ============
 
 async function loadData() {
-  const [data, monthlyStats, trends, comparisonData] = await Promise.all([
+  const [data, monthlyStats, trends, comparisonData, yearlyStats] = await Promise.all([
     fetchHistory(currentDays),
     fetchMonthlyStats(),
     fetchTrends(),
-    fetchMonthlyComparison()
+    fetchMonthlyComparison(),
+    fetchAllTimeStats()
   ]);
 
   updateSummary(data);
   updateTable(data);
   updateMonthlyStats(monthlyStats);
   updateTrendsUI(trends);
+  updateYearlyStats(yearlyStats);
 
   // Initialize charts
   initInmagChart(data);

@@ -292,6 +292,126 @@ function getMonthlyComparison(numMonths = 6) {
   return results.reverse(); // Oldest first for charts
 }
 
+// Get yearly statistics with volatility
+function getYearlyStats(year = null) {
+  const db = getDb();
+  const targetYear = year || new Date().getFullYear();
+
+  const stmt = db.prepare(`
+    SELECT
+      COUNT(*) as days,
+      ROUND(AVG(inmag), 2) as avg_inmag,
+      ROUND(MIN(inmag), 2) as min_inmag,
+      ROUND(MAX(inmag), 2) as max_inmag,
+      ROUND(AVG(cabezas), 0) as avg_cabezas,
+      ROUND(SUM(cabezas), 0) as total_cabezas,
+      ROUND(SUM(importe), 2) as total_importe,
+      MIN(fecha) as first_date,
+      MAX(fecha) as last_date
+    FROM price_records
+    WHERE strftime('%Y', fecha) = ? AND inmag > 0
+  `);
+
+  const stats = stmt.get(String(targetYear));
+
+  // Calculate volatility (standard deviation)
+  const volatilityStmt = db.prepare(`
+    SELECT ROUND(
+      SQRT(AVG((inmag - sub.avg) * (inmag - sub.avg))), 2
+    ) as volatility
+    FROM price_records,
+    (SELECT AVG(inmag) as avg FROM price_records WHERE strftime('%Y', fecha) = ? AND inmag > 0) sub
+    WHERE strftime('%Y', fecha) = ? AND inmag > 0
+  `);
+
+  const volatility = volatilityStmt.get(String(targetYear), String(targetYear));
+
+  // Get monthly breakdown for the year
+  const monthlyStmt = db.prepare(`
+    SELECT
+      strftime('%m', fecha) as month,
+      COUNT(*) as days,
+      ROUND(AVG(inmag), 2) as avg_inmag,
+      ROUND(MIN(inmag), 2) as min_inmag,
+      ROUND(MAX(inmag), 2) as max_inmag,
+      ROUND(AVG(cabezas), 0) as avg_cabezas
+    FROM price_records
+    WHERE strftime('%Y', fecha) = ? AND inmag > 0
+    GROUP BY strftime('%m', fecha)
+    ORDER BY month
+  `);
+
+  const monthlyBreakdown = monthlyStmt.all(String(targetYear)).map(m => ({
+    ...m,
+    month: parseInt(m.month),
+    monthName: getMonthName(parseInt(m.month))
+  }));
+
+  return {
+    year: targetYear,
+    ...stats,
+    volatility: volatility?.volatility || 0,
+    volatility_percent: stats?.avg_inmag ? ((volatility?.volatility || 0) / stats.avg_inmag * 100).toFixed(2) : 0,
+    monthly: monthlyBreakdown
+  };
+}
+
+// Get all-time statistics
+function getAllTimeStats() {
+  const db = getDb();
+
+  const stmt = db.prepare(`
+    SELECT
+      COUNT(*) as total_days,
+      ROUND(AVG(inmag), 2) as avg_inmag,
+      ROUND(MIN(inmag), 2) as min_inmag,
+      ROUND(MAX(inmag), 2) as max_inmag,
+      ROUND(AVG(cabezas), 0) as avg_cabezas,
+      ROUND(SUM(cabezas), 0) as total_cabezas,
+      MIN(fecha) as first_date,
+      MAX(fecha) as last_date
+    FROM price_records
+    WHERE inmag > 0
+  `);
+
+  const stats = stmt.get();
+
+  // Volatility
+  const volatilityStmt = db.prepare(`
+    SELECT ROUND(
+      SQRT(AVG((inmag - sub.avg) * (inmag - sub.avg))), 2
+    ) as volatility
+    FROM price_records,
+    (SELECT AVG(inmag) as avg FROM price_records WHERE inmag > 0) sub
+    WHERE inmag > 0
+  `);
+
+  const volatility = volatilityStmt.get();
+
+  // Get yearly breakdown
+  const yearlyStmt = db.prepare(`
+    SELECT
+      strftime('%Y', fecha) as year,
+      COUNT(*) as days,
+      ROUND(AVG(inmag), 2) as avg_inmag,
+      ROUND(MIN(inmag), 2) as min_inmag,
+      ROUND(MAX(inmag), 2) as max_inmag
+    FROM price_records
+    WHERE inmag > 0
+    GROUP BY strftime('%Y', fecha)
+    ORDER BY year
+  `);
+
+  const yearlyBreakdown = yearlyStmt.all();
+
+  return {
+    ...stats,
+    volatility: volatility?.volatility || 0,
+    volatility_percent: stats?.avg_inmag ? ((volatility?.volatility || 0) / stats.avg_inmag * 100).toFixed(2) : 0,
+    yearly: yearlyBreakdown
+  };
+}
+
 function close() {
   if (db) {
     db.close();
@@ -312,6 +432,8 @@ module.exports = {
   getRangeStats,
   getTrends,
   getMonthlyComparison,
+  getYearlyStats,
+  getAllTimeStats,
   getMonthName,
   cleanBadData,
   close
