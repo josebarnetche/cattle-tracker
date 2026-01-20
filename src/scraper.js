@@ -33,10 +33,17 @@ async function scrapePrices(startDate = null, endDate = null) {
 
         // Skip header rows, empty rows, TOTAL row, and invalid data
         const inmagValue = parseNumber(inmag);
-        if (isValidDate(fecha) && !fecha.includes('TOTAL') && inmagValue > 0) {
+        const cabezasValue = parseNumber(cabezas);
+
+        // Validate: valid date, reasonable INMAG (100-50000), reasonable cabezas (>0, <500000)
+        if (isValidDate(fecha) &&
+            !fecha.includes('TOTAL') &&
+            !fecha.toLowerCase().includes('totales') &&
+            inmagValue > 100 && inmagValue < 50000 &&
+            cabezasValue > 0 && cabezasValue < 500000) {
           records.push({
             fecha: parseDate(fecha),
-            cabezas: parseNumber(cabezas),
+            cabezas: cabezasValue,
             importe: parseNumber(importe),
             inmag: inmagValue
           });
@@ -63,10 +70,13 @@ async function scrapeMonth(year, month) {
   return scrapePrices(startDate, endDate);
 }
 
-// Validate that string is a valid DD/MM/YYYY date
+// Validate that string contains a valid DD/MM/YYYY date
+// Handles formats like "Ma 02/12/2025" (day abbreviation + date)
 function isValidDate(dateStr) {
   if (!dateStr) return false;
-  const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+
+  // Look for DD/MM/YYYY pattern anywhere in the string
+  const match = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (!match) return false;
 
   const [, day, month, year] = match;

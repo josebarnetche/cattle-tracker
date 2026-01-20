@@ -1,8 +1,12 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const cron = require('node-cron');
 const { scrapePrices, scrapeMonth } = require('./scraper');
 const db = require('./database');
+
+// Path to bundled historical data
+const HISTORICAL_DATA_PATH = path.join(__dirname, '..', 'data', 'historical.json');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -230,7 +234,24 @@ cron.schedule('0 * * * *', async () => {
   }
 });
 
-// Initial scrape on startup
+// Load bundled historical data from JSON file
+function loadBundledData() {
+  try {
+    if (fs.existsSync(HISTORICAL_DATA_PATH)) {
+      const data = JSON.parse(fs.readFileSync(HISTORICAL_DATA_PATH, 'utf8'));
+      if (data.length > 0) {
+        db.insertMany(data);
+        console.log(`Loaded ${data.length} records from bundled historical data`);
+        return data.length;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading bundled data:', error.message);
+  }
+  return 0;
+}
+
+// Initial data load on startup
 async function init() {
   console.log('Running initial data load...');
   try {
@@ -240,26 +261,41 @@ async function init() {
       console.log(`Data cleanup completed`);
     }
 
-    // Check if we have December 2025 data
-    const decStats = db.getMonthlyAverage(2025, 12);
+    // Check if database is empty
+    const existing = db.getLatest(1);
 
-    if (!decStats || decStats.days < 10) {
-      console.log('Loading December 2025 historical data...');
-      const decRecords = await scrapeMonth(2025, 12);
-      if (decRecords.length > 0) {
-        db.insertMany(decRecords);
-        console.log(`Loaded ${decRecords.length} records for December 2025`);
+    if (existing.length === 0) {
+      // Load bundled historical data first (faster, no network needed)
+      console.log('Database empty, loading bundled historical data...');
+      const bundledCount = loadBundledData();
+
+      if (bundledCount === 0) {
+        // Fallback to scraping if no bundled data
+        console.log('No bundled data, scraping December 2025...');
+        const decRecords = await scrapeMonth(2025, 12);
+        if (decRecords.length > 0) {
+          db.insertMany(decRecords);
+          console.log(`Loaded ${decRecords.length} records from scraping`);
+        }
       }
     } else {
-      console.log(`December 2025 data already loaded (${decStats.days} days)`);
+      console.log(`Database has ${existing.length > 0 ? 'data' : 'no data'}, skipping bundled load`);
     }
 
-    // Also get today's data
-    console.log('Fetching current data...');
-    const todayRecords = await scrapePrices();
-    if (todayRecords.length > 0) {
-      db.insertMany(todayRecords);
-      console.log(`Current scrape: saved ${todayRecords.length} records`);
+    // Try to get latest data from scraping (supplement bundled data)
+    console.log('Fetching latest data from site...');
+    const latestRecords = await scrapePrices();
+    if (latestRecords.length > 0) {
+      db.insertMany(latestRecords);
+      console.log(`Current scrape: saved ${latestRecords.length} records`);
+    } else {
+      console.log('No new data from scraping (site may be unavailable)');
+    }
+
+    // Log current stats
+    const stats = db.getLastMonthStats();
+    if (stats && stats.days > 0) {
+      console.log(`Last month (${stats.monthName}): ${stats.days} days, avg INMAG: ${stats.avg_inmag}`);
     }
   } catch (error) {
     console.error('Initial load failed:', error.message);
