@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cron = require('node-cron');
-const { scrapePrices } = require('./scraper');
+const { scrapePrices, scrapeMonth } = require('./scraper');
 const db = require('./database');
 
 const app = express();
@@ -120,6 +120,32 @@ app.post('/api/refresh', async (req, res) => {
   }
 });
 
+// API: Load historical month data
+app.post('/api/load-month', async (req, res) => {
+  try {
+    const year = parseInt(req.query.year) || 2025;
+    const month = parseInt(req.query.month) || 12;
+
+    console.log(`Loading data for ${month}/${year}...`);
+    const records = await scrapeMonth(year, month);
+
+    if (records.length > 0) {
+      db.insertMany(records);
+    }
+
+    res.json({
+      success: true,
+      message: `Loaded ${records.length} records for ${month}/${year}`
+    });
+  } catch (error) {
+    console.error('Load month error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Serve index.html for root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
@@ -146,15 +172,31 @@ cron.schedule('0 * * * *', async () => {
 
 // Initial scrape on startup
 async function init() {
-  console.log('Running initial scrape...');
+  console.log('Running initial data load...');
   try {
-    const records = await scrapePrices();
-    if (records.length > 0) {
-      db.insertMany(records);
-      console.log(`Initial scrape: saved ${records.length} records`);
+    // Check if we have December 2025 data
+    const decStats = db.getMonthlyAverage(2025, 12);
+
+    if (!decStats || decStats.days < 10) {
+      console.log('Loading December 2025 historical data...');
+      const decRecords = await scrapeMonth(2025, 12);
+      if (decRecords.length > 0) {
+        db.insertMany(decRecords);
+        console.log(`Loaded ${decRecords.length} records for December 2025`);
+      }
+    } else {
+      console.log(`December 2025 data already loaded (${decStats.days} days)`);
+    }
+
+    // Also get today's data
+    console.log('Fetching current data...');
+    const todayRecords = await scrapePrices();
+    if (todayRecords.length > 0) {
+      db.insertMany(todayRecords);
+      console.log(`Current scrape: saved ${todayRecords.length} records`);
     }
   } catch (error) {
-    console.error('Initial scrape failed:', error.message);
+    console.error('Initial load failed:', error.message);
   }
 }
 

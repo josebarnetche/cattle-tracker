@@ -1,15 +1,22 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-const SOURCE_URL = 'https://www.mercadoagroganadero.com.ar/dll/hacienda2.dll/haciinfo000011';
+const BASE_URL = 'https://www.mercadoagroganadero.com.ar/dll/hacienda2.dll/haciinfo000011';
 
-async function scrapePrices() {
+async function scrapePrices(startDate = null, endDate = null) {
   try {
-    const response = await axios.get(SOURCE_URL, {
+    let url = BASE_URL;
+
+    // Add date range parameters if provided
+    if (startDate && endDate) {
+      url = `${BASE_URL}?txtFECHAINI=${startDate}&txtFECHAFIN=${endDate}&CP=&LISTADO=SI`;
+    }
+
+    const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       },
-      timeout: 10000
+      timeout: 15000
     });
 
     const $ = cheerio.load(response.data);
@@ -24,8 +31,8 @@ async function scrapePrices() {
         const importe = $(cells[2]).text().trim();
         const inmag = $(cells[3]).text().trim();
 
-        // Skip header rows and empty rows
-        if (fecha && !fecha.includes('Fecha') && /\d/.test(fecha)) {
+        // Skip header rows, empty rows, and TOTAL row
+        if (fecha && !fecha.includes('Fecha') && !fecha.includes('TOTAL') && /\d/.test(fecha)) {
           records.push({
             fecha: parseDate(fecha),
             cabezas: parseNumber(cabezas),
@@ -36,13 +43,23 @@ async function scrapePrices() {
       }
     });
 
-    console.log(`Scraped ${records.length} records from ${SOURCE_URL}`);
+    console.log(`Scraped ${records.length} records from ${url}`);
     return records;
 
   } catch (error) {
     console.error('Scraper error:', error.message);
     return [];
   }
+}
+
+// Scrape a specific month (month is 1-12)
+async function scrapeMonth(year, month) {
+  const startDate = `01/${String(month).padStart(2, '0')}/${year}`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const endDate = `${lastDay}/${String(month).padStart(2, '0')}/${year}`;
+
+  console.log(`Scraping ${month}/${year}: ${startDate} to ${endDate}`);
+  return scrapePrices(startDate, endDate);
 }
 
 function parseDate(dateStr) {
@@ -67,4 +84,4 @@ function parseNumber(numStr) {
   return isNaN(num) ? 0 : num;
 }
 
-module.exports = { scrapePrices, parseDate, parseNumber };
+module.exports = { scrapePrices, scrapeMonth, parseDate, parseNumber };
