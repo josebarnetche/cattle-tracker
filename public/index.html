@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Precios de Hacienda - Mercado Agroganadero</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Precios de Hacienda</h1>
+      <p class="subtitle">Datos de Mercado Agroganadero S.A.</p>
+    </header>
+
+    <div class="summary-cards">
+      <div class="card">
+        <div class="card-label">Cabezas Ingresadas</div>
+        <div class="card-value" id="total-cabezas">-</div>
+        <div class="card-date" id="latest-date">Cargando...</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Índice INMAG</div>
+        <div class="card-value" id="inmag-index">-</div>
+        <div class="card-change" id="inmag-change"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Importe Total</div>
+        <div class="card-value" id="total-importe">-</div>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <div class="table-header">
+        <h2>Historial de Precios</h2>
+        <button id="refresh-btn" class="btn">Actualizar</button>
+      </div>
+
+      <div class="table-container">
+        <table id="prices-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Cabezas Ingresadas</th>
+              <th>Importe</th>
+              <th>Índice INMAG</th>
+            </tr>
+          </thead>
+          <tbody id="prices-body">
+            <tr>
+              <td colspan="4" class="loading">Cargando datos...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <footer>
+      <p>Datos obtenidos de <a href="https://www.mercadoagroganadero.com.ar" target="_blank">Mercado Agroganadero S.A.</a></p>
+      <p>Actualización automática cada hora</p>
+    </footer>
+  </div>
+
+  <div id="error-toast" class="toast hidden">
+    <span id="error-message"></span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
