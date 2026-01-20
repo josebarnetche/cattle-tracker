@@ -50,7 +50,7 @@ async function fetchMonthlyStats() {
 }
 
 function updateMonthlyStats(stats) {
-  if (!stats || stats.days === 0) {
+  if (!stats || !stats.days) {
     document.getElementById('month-name').textContent = 'Sin datos';
     document.getElementById('avg-cabezas').textContent = '-';
     document.getElementById('avg-inmag').textContent = '-';

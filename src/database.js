@@ -118,8 +118,11 @@ function getMonthlyAverage(year, month) {
 function getLastMonthStats() {
   const now = new Date();
   let year = now.getFullYear();
-  let month = now.getMonth(); // 0-indexed, so this is last month
+  // getMonth() is 0-indexed (0=Jan), which equals last month's 1-indexed value
+  // e.g., in February (getMonth()=1), last month is January (month 1)
+  let month = now.getMonth();
 
+  // Handle January: last month is December of previous year
   if (month === 0) {
     month = 12;
     year -= 1;
