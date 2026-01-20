@@ -31,13 +31,14 @@ async function scrapePrices(startDate = null, endDate = null) {
         const importe = $(cells[2]).text().trim();
         const inmag = $(cells[3]).text().trim();
 
-        // Skip header rows, empty rows, and TOTAL row
-        if (fecha && !fecha.includes('Fecha') && !fecha.includes('TOTAL') && /\d/.test(fecha)) {
+        // Skip header rows, empty rows, TOTAL row, and invalid data
+        const inmagValue = parseNumber(inmag);
+        if (isValidDate(fecha) && !fecha.includes('TOTAL') && inmagValue > 0) {
           records.push({
             fecha: parseDate(fecha),
             cabezas: parseNumber(cabezas),
             importe: parseNumber(importe),
-            inmag: parseNumber(inmag)
+            inmag: inmagValue
           });
         }
       }
@@ -62,6 +63,23 @@ async function scrapeMonth(year, month) {
   return scrapePrices(startDate, endDate);
 }
 
+// Validate that string is a valid DD/MM/YYYY date
+function isValidDate(dateStr) {
+  if (!dateStr) return false;
+  const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return false;
+
+  const [, day, month, year] = match;
+  const d = parseInt(day), m = parseInt(month), y = parseInt(year);
+
+  // Validate ranges
+  if (m < 1 || m > 12) return false;
+  if (d < 1 || d > 31) return false;
+  if (y < 2020 || y > 2030) return false;
+
+  return true;
+}
+
 function parseDate(dateStr) {
   // Handle various date formats from the site
   const cleaned = dateStr.replace(/\s+/g, ' ').trim();
@@ -84,4 +102,4 @@ function parseNumber(numStr) {
   return isNaN(num) ? 0 : num;
 }
 
-module.exports = { scrapePrices, scrapeMonth, parseDate, parseNumber };
+module.exports = { scrapePrices, scrapeMonth, parseDate, parseNumber, isValidDate };

@@ -109,7 +109,7 @@ function getMonthlyAverage(year, month) {
       MIN(fecha) as first_date,
       MAX(fecha) as last_date
     FROM price_records
-    WHERE fecha LIKE ?
+    WHERE fecha LIKE ? AND inmag > 0
   `);
 
   return stmt.get(pattern);
@@ -144,6 +144,154 @@ function getMonthName(month) {
   return months[month - 1] || '';
 }
 
+// Clean bad data from database (invalid dates and zero INMAG values)
+function cleanBadData() {
+  const db = getDb();
+
+  // Delete records with invalid dates (not YYYY-MM-DD format)
+  const deleteInvalidDates = db.prepare(`
+    DELETE FROM price_records
+    WHERE fecha NOT GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+  `);
+
+  // Delete records with inmag = 0 (market closed days)
+  const deleteZeroInmag = db.prepare(`
+    DELETE FROM price_records WHERE inmag = 0 OR inmag IS NULL
+  `);
+
+  const result1 = deleteInvalidDates.run();
+  const result2 = deleteZeroInmag.run();
+
+  console.log(`Cleanup: removed ${result1.changes} invalid dates, ${result2.changes} zero INMAG records`);
+
+  return {
+    invalidDatesRemoved: result1.changes,
+    zeroInmagRemoved: result2.changes
+  };
+}
+
+// Get records for a date range
+function getRange(startDate, endDate) {
+  const db = getDb();
+
+  if (startDate && endDate) {
+    const stmt = db.prepare(`
+      SELECT * FROM price_records
+      WHERE fecha BETWEEN ? AND ? AND inmag > 0
+      ORDER BY fecha DESC
+    `);
+    return stmt.all(startDate, endDate);
+  }
+
+  return getAll();
+}
+
+// Get statistics for a date range
+function getRangeStats(startDate, endDate) {
+  const db = getDb();
+
+  const stmt = db.prepare(`
+    SELECT
+      COUNT(*) as days,
+      ROUND(AVG(inmag), 2) as avg_inmag,
+      ROUND(MIN(inmag), 2) as min_inmag,
+      ROUND(MAX(inmag), 2) as max_inmag,
+      ROUND(AVG(cabezas), 0) as avg_cabezas,
+      ROUND(SUM(cabezas), 0) as total_cabezas,
+      ROUND(SUM(importe), 2) as total_importe,
+      MIN(fecha) as first_date,
+      MAX(fecha) as last_date
+    FROM price_records
+    WHERE fecha BETWEEN ? AND ? AND inmag > 0
+  `);
+
+  const stats = stmt.get(startDate, endDate);
+
+  // Calculate volatility (standard deviation)
+  const volatilityStmt = db.prepare(`
+    SELECT ROUND(
+      SQRT(AVG((inmag - sub.avg) * (inmag - sub.avg))), 2
+    ) as volatility
+    FROM price_records,
+    (SELECT AVG(inmag) as avg FROM price_records WHERE fecha BETWEEN ? AND ? AND inmag > 0) sub
+    WHERE fecha BETWEEN ? AND ? AND inmag > 0
+  `);
+
+  const volatility = volatilityStmt.get(startDate, endDate, startDate, endDate);
+
+  return { ...stats, volatility: volatility?.volatility || 0 };
+}
+
+// Get trend indicators (week-over-week, month-over-month)
+function getTrends() {
+  const db = getDb();
+
+  // Get current week vs last week
+  const weeklyTrend = db.prepare(`
+    WITH current_week AS (
+      SELECT AVG(inmag) as avg FROM price_records
+      WHERE fecha >= date('now', '-7 days') AND inmag > 0
+    ),
+    last_week AS (
+      SELECT AVG(inmag) as avg FROM price_records
+      WHERE fecha >= date('now', '-14 days')
+        AND fecha < date('now', '-7 days')
+        AND inmag > 0
+    )
+    SELECT
+      ROUND(current_week.avg, 2) as current_avg,
+      ROUND(last_week.avg, 2) as previous_avg,
+      ROUND(((current_week.avg - last_week.avg) / last_week.avg) * 100, 2) as change_percent
+    FROM current_week, last_week
+  `).get();
+
+  // Get current month vs last month
+  const monthlyTrend = db.prepare(`
+    WITH current_month AS (
+      SELECT AVG(inmag) as avg FROM price_records
+      WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now') AND inmag > 0
+    ),
+    last_month AS (
+      SELECT AVG(inmag) as avg FROM price_records
+      WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now', '-1 month') AND inmag > 0
+    )
+    SELECT
+      ROUND(current_month.avg, 2) as current_avg,
+      ROUND(last_month.avg, 2) as previous_avg,
+      ROUND(((current_month.avg - last_month.avg) / last_month.avg) * 100, 2) as change_percent
+    FROM current_month, last_month
+  `).get();
+
+  return {
+    weekly: weeklyTrend,
+    monthly: monthlyTrend
+  };
+}
+
+// Get monthly comparison for last N months
+function getMonthlyComparison(numMonths = 6) {
+  const results = [];
+  const now = new Date();
+
+  for (let i = 0; i < numMonths; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+
+    const stats = getMonthlyAverage(year, month);
+    if (stats && stats.days > 0) {
+      results.push({
+        year,
+        month,
+        monthName: getMonthName(month),
+        ...stats
+      });
+    }
+  }
+
+  return results.reverse(); // Oldest first for charts
+}
+
 function close() {
   if (db) {
     db.close();
@@ -158,7 +306,13 @@ module.exports = {
   getLatest,
   getHistory,
   getAll,
+  getRange,
   getMonthlyAverage,
   getLastMonthStats,
+  getRangeStats,
+  getTrends,
+  getMonthlyComparison,
+  getMonthName,
+  cleanBadData,
   close
 };

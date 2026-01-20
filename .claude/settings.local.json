@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix monthly average null check and clarify comments\n\n- Fix updateMonthlyStats to handle null/undefined days values\n- Clarify misleading comment in getLastMonthStats function\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix monthly average null check and clarify comments\n\n- Fix updateMonthlyStats to handle null/undefined days values\n- Clarify misleading comment in getLastMonthStats function\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(sqlite3:*)",
+      "Bash(node:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

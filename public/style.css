@@ -232,6 +232,202 @@ footer a {
   pointer-events: none;
 }
 
+/* Charts Section */
+.charts-section {
+  margin-bottom: 30px;
+}
+
+.chart-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.chart-controls h2 {
+  color: #2c5530;
+  font-size: 1.5rem;
+}
+
+.chart-period-selector {
+  display: flex;
+  gap: 10px;
+}
+
+.period-btn {
+  background: white;
+  border: 2px solid #2c5530;
+  color: #2c5530;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.period-btn:hover {
+  background: #f0f7f0;
+}
+
+.period-btn.active {
+  background: #2c5530;
+  color: white;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.chart-card h3 {
+  color: #2c5530;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.chart-card canvas {
+  max-height: 300px;
+}
+
+/* Analytics Section */
+.analytics-section {
+  margin-bottom: 30px;
+}
+
+.analytics-section h2 {
+  color: #2c5530;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.stat-content {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c5530;
+}
+
+.stat-change {
+  font-size: 0.9rem;
+  margin-top: 5px;
+  font-weight: 600;
+}
+
+.stat-change.positive {
+  color: #22c55e;
+}
+
+.stat-change.negative {
+  color: #ef4444;
+}
+
+.stat-subtitle {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 3px;
+}
+
+/* Filter Section */
+.filter-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.filter-section h3 {
+  color: #2c5530;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.date-picker-row {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.date-input-group label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.date-input {
+  padding: 10px 12px;
+  border: 2px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #2c5530;
+}
+
+.btn-secondary {
+  background: white;
+  color: #2c5530;
+  border: 2px solid #2c5530;
+}
+
+.btn-secondary:hover {
+  background: #f0f7f0;
+}
+
+.btn-export {
+  background: #4a7c59;
+}
+
+.btn-export:hover {
+  background: #3a6249;
+}
+
 @media (max-width: 600px) {
   header h1 {
     font-size: 1.8rem;
@@ -244,5 +440,27 @@ footer a {
   th, td {
     padding: 10px;
     font-size: 0.85rem;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-controls {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .date-picker-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-picker-row .btn {
+    width: 100%;
+  }
+
+  .analytics-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

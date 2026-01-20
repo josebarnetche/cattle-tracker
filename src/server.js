@@ -71,7 +71,7 @@ app.get('/api/monthly', (req, res) => {
       stats = {
         year,
         month,
-        monthName: getMonthName(month),
+        monthName: db.getMonthName(month),
         ...db.getMonthlyAverage(year, month)
       };
     } else {
@@ -90,14 +90,6 @@ app.get('/api/monthly', (req, res) => {
     });
   }
 });
-
-function getMonthName(month) {
-  const months = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-  ];
-  return months[month - 1] || '';
-}
 
 // API: Force refresh data
 app.post('/api/refresh', async (req, res) => {
@@ -146,6 +138,74 @@ app.post('/api/load-month', async (req, res) => {
   }
 });
 
+// API: Get statistics for a date range
+app.get('/api/stats/range', (req, res) => {
+  try {
+    const startDate = req.query.start;
+    const endDate = req.query.end;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'start and end dates required (YYYY-MM-DD format)'
+      });
+    }
+
+    const stats = db.getRangeStats(startDate, endDate);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('Range stats error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Get trend indicators
+app.get('/api/stats/trends', (req, res) => {
+  try {
+    const trends = db.getTrends();
+    res.json({ success: true, data: trends });
+  } catch (error) {
+    console.error('Trends error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Get monthly comparison (last N months)
+app.get('/api/stats/monthly-comparison', (req, res) => {
+  try {
+    const months = parseInt(req.query.months) || 6;
+    const comparison = db.getMonthlyComparison(months);
+    res.json({ success: true, data: comparison });
+  } catch (error) {
+    console.error('Monthly comparison error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: Export data to CSV
+app.get('/api/export', (req, res) => {
+  try {
+    const startDate = req.query.start;
+    const endDate = req.query.end;
+
+    const records = db.getRange(startDate, endDate);
+
+    // Generate CSV
+    const headers = 'Fecha,Cabezas,Importe,INMAG\n';
+    const rows = records.map(r =>
+      `${r.fecha},${r.cabezas},${r.importe},${r.inmag}`
+    ).join('\n');
+    const csv = headers + rows;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=precios-hacienda.csv');
+    res.send(csv);
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Serve index.html for root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
@@ -174,6 +234,12 @@ cron.schedule('0 * * * *', async () => {
 async function init() {
   console.log('Running initial data load...');
   try {
+    // Clean any bad data first
+    const cleanup = db.cleanBadData();
+    if (cleanup.invalidDatesRemoved > 0 || cleanup.zeroInmagRemoved > 0) {
+      console.log(`Data cleanup completed`);
+    }
+
     // Check if we have December 2025 data
     const decStats = db.getMonthlyAverage(2025, 12);
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Precios de Hacienda - Mercado Agroganadero</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -49,6 +50,89 @@
           <div class="card-label">Días con Datos</div>
           <div class="card-value" id="month-days">-</div>
         </div>
+      </div>
+    </div>
+
+    <div class="charts-section">
+      <div class="chart-controls">
+        <h2>Tendencias de Precios</h2>
+        <div class="chart-period-selector">
+          <button class="period-btn active" data-days="30">30 dias</button>
+          <button class="period-btn" data-days="60">60 dias</button>
+          <button class="period-btn" data-days="90">90 dias</button>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Evolucion del INMAG</h3>
+          <canvas id="inmag-chart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Cabezas Ingresadas por Dia</h3>
+          <canvas id="cabezas-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card full-width">
+        <h3>Comparacion Mensual</h3>
+        <canvas id="monthly-comparison-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="analytics-section">
+      <h2>Indicadores de Mercado</h2>
+      <div class="analytics-grid">
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">Tendencia Semanal</div>
+            <div class="stat-value" id="weekly-trend">-</div>
+            <div class="stat-change" id="weekly-change"></div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">Tendencia Mensual</div>
+            <div class="stat-value" id="monthly-trend">-</div>
+            <div class="stat-change" id="monthly-change"></div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">INMAG Maximo (30d)</div>
+            <div class="stat-value" id="max-inmag">-</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">INMAG Minimo (30d)</div>
+            <div class="stat-value" id="min-inmag">-</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-label">Volatilidad</div>
+            <div class="stat-value" id="volatility">-</div>
+            <div class="stat-subtitle">Desviacion estandar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <h3>Filtrar por Fecha</h3>
+      <div class="date-picker-row">
+        <div class="date-input-group">
+          <label for="start-date">Desde</label>
+          <input type="date" id="start-date" class="date-input">
+        </div>
+        <div class="date-input-group">
+          <label for="end-date">Hasta</label>
+          <input type="date" id="end-date" class="date-input">
+        </div>
+        <button id="apply-filter-btn" class="btn">Aplicar</button>
+        <button id="clear-filter-btn" class="btn btn-secondary">Limpiar</button>
+        <button id="export-btn" class="btn btn-export">Exportar CSV</button>
       </div>
     </div>
 
